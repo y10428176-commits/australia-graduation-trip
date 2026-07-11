@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#eaf3f8" />
+  <title>畢業旅行─=≡Σ((( つ•̀ω•́)つ</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light; --ink:#1f2933; --muted:#73808c; --line:rgba(112,132,145,.16); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font-family:"DM Sans","Noto Sans TC",system-ui,sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(191,219,235,.76), transparent 28rem),
+        radial-gradient(circle at 90% 18%, rgba(228,237,242,.96), transparent 25rem),
+        #edf2f5;
+      -webkit-tap-highlight-color:transparent;
+    }
+    button, input, textarea { font:inherit; }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+    .no-scrollbar { scrollbar-width:none; }
+    .glass { background:rgba(255,255,255,.72); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
+    .soft-shadow { box-shadow:0 18px 55px rgba(61,81,94,.10), 0 2px 9px rgba(61,81,94,.05); }
+    .card-shadow { box-shadow:0 10px 30px rgba(68,88,102,.08); }
+    .fade-enter-active,.fade-leave-active { transition:.2s ease; }
+    .fade-enter-from,.fade-leave-to { opacity:0; transform:translateY(8px); }
+    .safe-bottom { padding-bottom:max(1rem, env(safe-area-inset-bottom)); }
+    .timeline-line::before {
+      content:""; position:absolute; left:19px; top:35px; bottom:-17px; width:1px;
+      background:linear-gradient(#b9ceda,rgba(185,206,218,.1));
+    }
+    .timeline-line:last-child::before { display:none; }
+    .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="mx-auto min-h-screen max-w-[460px] bg-[#f7f9fa]/85 shadow-2xl shadow-slate-400/20 relative pb-28 overflow-x-hidden">
+    <header class="sticky top-0 z-30 glass border-b border-white/60">
+      <div class="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-[10px] uppercase tracking-[.25em] text-slate-400 font-bold">Australia 2026</p>
+            <h1 class="mt-1 text-[20px] leading-tight font-bold tracking-[-.04em] text-slate-800">
+              畢業旅行─=≡Σ((( つ•̀ω•́)つ
+            </h1>
+          </div>
+        </div>
+
+        <div ref="dateStrip" class="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1">
+          <button v-for="(day,index) in days" :key="day.id" :ref="el => dateButtons[index] = el"
+            @click="selectDay(index)"
+            class="snap-center shrink-0 min-w-[62px] rounded-[20px] px-3 py-2.5 border transition-all duration-200 active:scale-95"
+            :class="activeDayIndex===index
+              ? 'bg-slate-800 text-white border-slate-800 shadow-lg shadow-slate-400/30 -translate-y-0.5'
+              : 'bg-white/65 text-slate-500 border-white/80'">
+            <span class="block text-[10px] font-bold tracking-wider">{{ day.day }}</span>
+            <span class="mt-1 block text-lg leading-none font-bold">{{ dayNumber(day.date) }}</span>
+            <span class="mt-1 block text-[10px] opacity-70">{{ weekday(day.date) }}</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="px-4 pt-4 space-y-4">
+      <section class="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#cfe4ef] via-[#e7f0f4] to-[#f7f9fa] p-5 soft-shadow border border-white/80">
+        <div class="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/45 blur-2xl"></div>
+        <div class="relative">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-500">{{ prettyDate(currentDay.date) }}</p>
+              <h2 class="mt-1 text-2xl font-bold tracking-[-.04em] text-slate-800">{{ currentDay.city }}</h2>
+              <p class="mt-1 text-xs text-slate-500">{{ itemCount }} 個行程項目 · {{ foodCount }} 間美食備選</p>
+            </div>
+            <div class="text-right">
+              <div class="text-3xl">{{ weather.icon }}</div>
+              <div class="mt-1 text-xl font-bold text-slate-800">{{ weather.temperature }}</div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-2 rounded-2xl bg-white/55 border border-white/80 px-3 py-2.5">
+            <span class="text-sm">{{ weather.smallIcon }}</span>
+            <p class="text-[11px] leading-relaxed text-slate-600 flex-1">{{ weather.detail }}</p>
+            <button @click="fetchWeather(true)" class="text-[11px] font-bold text-sky-700 active:opacity-60">更新</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-2 gap-3">
+        <button type="button" @click="openExternal(allDayMapUrl)" class="text-left rounded-[22px] bg-white p-4 card-shadow border border-slate-100 active:scale-[.98] transition">
+          <span class="grid h-10 w-10 place-items-center rounded-2xl bg-sky-50 text-lg">🗺️</span>
+          <p class="mt-3 text-sm font-bold text-slate-800">今日地圖</p>
+          <p class="mt-1 text-[11px] text-slate-400">查看當日地點</p>
+        </button>
+        <button type="button" @click="openExternal(transportUrl)" class="text-left rounded-[22px] bg-white p-4 card-shadow border border-slate-100 active:scale-[.98] transition">
+          <span class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-lg">🚆</span>
+          <p class="mt-3 text-sm font-bold text-slate-800">{{ transportLabel }}</p>
+          <p class="mt-1 text-[11px] text-slate-400">查詢即時班次</p>
+        </button>
+      </section>
+
+      <section>
+        <div class="mb-3 flex items-center justify-between px-1">
+          <div>
+            <p class="text-[10px] uppercase tracking-[.2em] font-bold text-slate-400">Itinerary</p>
+            <h3 class="mt-1 text-lg font-bold tracking-tight text-slate-800">每日行程</h3>
+          </div>
+          <button @click="openAddSlotItem(0)" class="rounded-full bg-slate-800 text-white px-3.5 py-2 text-xs font-bold shadow-md active:scale-95">＋ 新增</button>
+        </div>
+
+        <div class="space-y-3">
+          <article v-for="(slot,slotIndex) in currentDay.slots" :key="slot.time"
+            class="rounded-[26px] bg-white border border-slate-100 card-shadow overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+              <div class="flex items-center gap-2.5">
+                <span class="grid h-8 w-8 place-items-center rounded-xl bg-white shadow-sm text-sm">{{ slotIcon(slot.time) }}</span>
+                <div>
+                  <p class="text-sm font-bold text-slate-700">{{ slot.time }}</p>
+                  <p class="text-[10px] text-slate-400">{{ slot.items.length }} 項</p>
+                </div>
+              </div>
+              <button @click="openAddSlotItem(slotIndex)" class="h-8 w-8 rounded-full bg-white border border-slate-100 text-slate-500 active:scale-90">＋</button>
+            </div>
+
+            <div v-if="slot.items.length" class="px-4 py-2">
+              <div v-for="(item,itemIndex) in slot.items" :key="item.id"
+                class="timeline-line relative flex gap-3 py-3 group">
+                <div v-if="itemIcon(item.text)" class="relative z-10 mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#eef5f8] text-base border border-white">
+                  {{ itemIcon(item.text) }}
+                </div>
+                <div v-else class="w-0 shrink-0"></div>
+                <div class="min-w-0 flex-1">
+                  <p class="whitespace-pre-line text-[13px] leading-6 text-slate-700">{{ item.text }}</p>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <button type="button" @click="openExternal(mapUrl(item.text))" class="rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-bold text-sky-700 active:scale-95">導航</button>
+                    <button @click="openEditSlotItem(slotIndex,itemIndex)" class="rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-500">編輯</button>
+                    <button @click="deleteSlotItem(slotIndex,itemIndex)" class="rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-500">刪除</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="px-4 py-5 text-center">
+              <p class="text-xs text-slate-400">此時段沒有內容</p>
+              <button @click="openAddSlotItem(slotIndex)" class="mt-2 text-xs font-bold text-sky-700">新增行程</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+
+      <section v-if="currentDay.notes && currentDay.notes.length">
+        <div class="mb-3 px-1">
+          <p class="text-[10px] uppercase tracking-[.2em] font-bold text-slate-400">Notes</p>
+          <h3 class="mt-1 text-lg font-bold tracking-tight text-slate-800">備註</h3>
+        </div>
+        <article class="rounded-[26px] bg-amber-50/80 border border-amber-100 card-shadow p-4">
+          <div v-for="(note,index) in currentDay.notes" :key="index" class="flex gap-3 py-2">
+            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-white text-sm shadow-sm">{{ note.includes("FREE TRAM ZONE") ? "☆" : "💡" }}</span>
+            <p class="text-[12px] leading-6 text-slate-700 whitespace-pre-line">{{ note }}</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="pb-4">
+        <div class="mb-3 flex items-center justify-between px-1">
+          <div>
+            <p class="text-[10px] uppercase tracking-[.2em] font-bold text-slate-400">Food List</p>
+            <h3 class="mt-1 text-lg font-bold tracking-tight text-slate-800">吃吃清單</h3>
+          </div>
+        </div>
+
+        <div v-if="Object.keys(currentDay.food).length" class="space-y-3">
+          <article v-for="(items,category) in currentDay.food" :key="category"
+            class="rounded-[26px] bg-white border border-slate-100 card-shadow p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="grid h-9 w-9 place-items-center rounded-2xl bg-[#f2f6f8]">{{ foodIcon(category) }}</span>
+                <div>
+                  <h4 class="text-sm font-bold text-slate-700">{{ category }}</h4>
+                  <p class="text-[10px] text-slate-400">{{ items.length }} 個選項</p>
+                </div>
+              </div>
+              <button @click="openAddFood(category)" class="h-8 w-8 rounded-full bg-slate-50 text-slate-500">＋</button>
+            </div>
+            <div class="mt-3 grid gap-2">
+              <div v-for="(place,index) in items" :key="place.id" class="flex items-center gap-2 rounded-2xl bg-slate-50/80 px-3 py-2.5">
+                <button type="button" @click="openExternal(mapUrl(place.name))" class="min-w-0 flex-1 text-left">
+                  <p class="text-[12px] leading-5 font-semibold text-slate-650">{{ place.name }}</p>
+                  <p class="mt-0.5 text-[9px] text-sky-700">Google Maps 導航 ↗</p>
+                </button>
+                <button @click="deleteFood(category,index)" class="grid h-7 w-7 place-items-center rounded-full bg-white text-[11px] text-slate-400">×</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div v-else class="rounded-[26px] bg-white border border-slate-100 card-shadow px-5 py-8 text-center">
+          <div class="text-3xl">🍽️</div>
+          <p class="mt-2 text-sm font-bold text-slate-700">本日沒有美食清單</p>
+          
+          <button @click="openAddFood('早餐')" class="mt-4 rounded-full bg-slate-800 px-4 py-2 text-xs font-bold text-white">新增美食</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="fixed bottom-0 left-1/2 z-40 w-full max-w-[460px] -translate-x-1/2 glass border-t border-white/70 safe-bottom">
+      <div class="grid grid-cols-3 px-6 pt-2">
+        <button @click="scrollTop" class="flex flex-col items-center gap-1 py-2 text-slate-800">
+          <span class="text-lg">⌂</span><span class="text-[10px] font-bold">行程</span>
+        </button>
+        <button type="button" @click="openExternal('https://www.google.com/maps')" class="flex flex-col items-center gap-1 py-2 text-slate-400">
+          <span class="text-lg">⌖</span><span class="text-[10px] font-bold">地圖</span>
+        </button>
+        <button @click="openAddSlotItem(0)" class="flex flex-col items-center gap-1 py-2 text-slate-400">
+          <span class="text-lg">＋</span><span class="text-[10px] font-bold">新增</span>
+        </button>
+      </div>
+    </nav>
+
+    <transition name="fade">
+      <div v-if="modal.show" class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/35 backdrop-blur-sm" @click.self="closeModal">
+        <div class="w-full max-w-[460px] rounded-t-[32px] bg-white p-5 safe-bottom shadow-2xl">
+          <div class="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200"></div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-800">{{ modal.title }}</h3>
+            <button @click="closeModal" class="h-9 w-9 rounded-full bg-slate-100 text-slate-500">×</button>
+          </div>
+          <div class="mt-4">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ modal.type==='food' ? '餐廳或地點' : '行程內容' }}</label>
+            <textarea v-if="modal.type!=='food'" v-model="modal.text" rows="5"
+              class="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-sky-300"
+              placeholder="輸入時間、地點、交通或備註"></textarea>
+            <input v-else v-model="modal.text"
+              class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-300"
+              placeholder="例如：Felix For Goodness" />
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <button @click="closeModal" class="rounded-2xl bg-slate-100 py-3 text-xs font-bold text-slate-500">取消</button>
+            <button @click="saveModal" class="rounded-2xl bg-slate-800 py-3 text-xs font-bold text-white shadow-lg">儲存</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+</div>
+
+<script>
+const ORIGINAL_DAYS = [{"id": "day-1", "day": "DAY 1", "date": "2026-07-21", "city": "布里斯本", "weatherCity": "Brisbane", "lat": -27.4698, "lon": 153.0251, "slots": [{"time": "早上", "items": [{"id": "d1-早上-1", "text": "🏠 🛌 ⏰ 🚽 🤳🏻 🍳"}]}, {"time": "中午", "items": [{"id": "d1-中午-1", "text": "🪥🪞 🍽️ 🚇 🎒 🧳"}]}, {"time": "下午", "items": [{"id": "d1-下午-1", "text": "🛩️ 16：50 桃園 ➜ 19：20 馬尼拉"}]}, {"time": "晚上", "items": [{"id": "d1-晚上-1", "text": "🛩️ 00：05 馬尼拉 ➜ 10 : 05 布里斯本"}]}], "food": {}, "notes": []}, {"id": "day-2", "day": "DAY 2", "date": "2026-07-22", "city": "布里斯本", "weatherCity": "Brisbane", "lat": -27.4698, "lon": 153.0251, "slots": [{"time": "早上", "items": [{"id": "d2-早上-1", "text": "從機場叫車至飯店寄放行李"}, {"id": "d2-早上-2", "text": "Oaks Brisbane Festival Suites 地址：108 Albert St, Brisbane City QLD 4000, Australia"}]}, {"time": "中午", "items": [{"id": "d2-中午-1", "text": "澳洲第☝🏻餐！"}, {"id": "d2-中午-2", "text": "Queen Street Mall"}]}, {"time": "下午", "items": [{"id": "d2-下午-1", "text": "Story Bridge"}, {"id": "d2-下午-2", "text": "South Bank Parklands（可以搭 Cityhopper）"}, {"id": "d2-下午-3", "text": "Gelato time！"}, {"id": "d2-下午-4", "text": "天氣好可以去 Highgate Hill Park 看日落"}]}, {"time": "晚上", "items": [{"id": "d2-晚上-1", "text": "粗晚餐（可以自煮或是吃吃list）！"}, {"id": "d2-晚上-2", "text": "逛超市時間   呀呼～～"}]}], "food": {"午餐": [{"id": "food-2-午餐-1", "name": "O Bagel Brisbane"}, {"id": "food-2-午餐-2", "name": "Betty’s Burgers"}, {"id": "food-2-午餐-3", "name": "Felix For Goodness"}], "甜點": [{"id": "food-2-甜點-1", "name": "Shiro Gelato & Snack @Brisbane CBD"}, {"id": "food-2-甜點-2", "name": "Anita Gelato West End"}, {"id": "food-2-甜點-3", "name": "Gelato Messina South Brisbane（分店：Gelato Messina Fortitude Valley）"}], "晚餐": [{"id": "food-2-晚餐-1", "name": "La Lupa"}, {"id": "food-2-晚餐-2", "name": "Burger Time 69"}, {"id": "food-2-晚餐-3", "name": "Hai Hai West End"}, {"id": "food-2-晚餐-4", "name": "Gamdang 감당"}, {"id": "food-2-晚餐-5", "name": "Betty’s Burgers"}, {"id": "food-2-晚餐-6", "name": "Choi Korean Cuisine City"}], "住宿附近的超市": [{"id": "food-2-住宿附近的超市-1", "name": "Woolworths Macarthur Central"}, {"id": "food-2-住宿附近的超市-2", "name": "Coles Local Brisbane - Adelaide St"}, {"id": "food-2-住宿附近的超市-3", "name": "Coles Central Brisbane Myer Express"}]}, "notes": []}, {"id": "day-3", "day": "DAY 3", "date": "2026-07-23", "city": "黃金海岸", "weatherCity": "Gold Coast", "lat": -28.0167, "lon": 153.4, "slots": [{"time": "早上", "items": [{"id": "d3-早上-1", "text": "吃早餐！"}, {"id": "d3-早上-2", "text": "到 Central station 搭火車（30分鐘一班）至Helensvale station 轉乘 再搭到 Surfers Paradise North Station（總車程為1小時44分鐘）"}]}, {"time": "中午", "items": [{"id": "d3-中午-1", "text": "轉搭705號公車至Sea World 玩耍（車程約15分鐘）"}]}, {"time": "下午", "items": [{"id": "d3-下午-1", "text": "大概日落前1~1.5小時離開Sea World"}, {"id": "d3-下午-2", "text": "回到Surfers Paradise North Station 後，到附近的Surfers Paradise Sign、沙灘、SkyPoint Observation Deck（可360度俯瞰海岸線與城市高樓全景）逛逛"}]}, {"time": "晚上", "items": [{"id": "d3-晚上-1", "text": "視情況決定晚餐在黃金海岸或是回飯店或市區吃！"}, {"id": "d3-晚上-2", "text": "想逛超市或其他的當然可以～～"}]}], "food": {"早餐": [{"id": "food-3-早餐-1", "name": "Felix For Goodness"}, {"id": "food-3-早餐-2", "name": "Hill Station Cafe & Restaurant"}, {"id": "food-3-早餐-3", "name": "Christian Jacques Bakery"}, {"id": "food-3-早餐-4", "name": "Blackstar Coffee Roasters - West End"}, {"id": "food-3-早餐-5", "name": "The Twin"}, {"id": "food-3-早餐-6", "name": "Cafe Disco"}, {"id": "food-3-早餐-7", "name": "Good Good West End"}, {"id": "food-3-早餐-8", "name": "Blue Bear Coffeehouse"}, {"id": "food-3-早餐-9", "name": "James & Antler"}, {"id": "food-3-早餐-10", "name": "Piccolo By Him"}, {"id": "food-3-早餐-11", "name": "Andonis Cafe & Bar, Fortitude Valley"}, {"id": "food-3-早餐-12", "name": "Paddington Social"}, {"id": "food-3-早餐-13", "name": "Riser"}], "晚餐": [{"id": "food-3-晚餐-1", "name": "La Lupa"}, {"id": "food-3-晚餐-2", "name": "Burger Time 69"}, {"id": "food-3-晚餐-3", "name": "Hai Hai West End"}, {"id": "food-3-晚餐-4", "name": "Gamdang 감당"}, {"id": "food-3-晚餐-5", "name": "Betty’s Burgers"}, {"id": "food-3-晚餐-6", "name": "Choi Korean Cuisine City"}]}, "notes": []}, {"id": "day-4", "day": "DAY 4", "date": "2026-07-24", "city": "布里斯本", "weatherCity": "Brisbane", "lat": -27.4698, "lon": 153.0251, "slots": [{"time": "早上", "items": [{"id": "d4-早上-1", "text": "吃早午餐！"}]}, {"time": "中午", "items": [{"id": "d4-中午-1", "text": "吃飽後從早午餐地點附近的車站搭乘430或455公車（車程約45分鐘）至 Lone Pine Koala Sanctuary"}, {"id": "d4-中午-2", "text": "去高於接的學校aka昆士蘭大學晃晃！"}]}, {"time": "下午", "items": [{"id": "d4-下午-1", "text": "視情況決定要不要去Westfield Chermside"}]}, {"time": "晚上", "items": [{"id": "d4-晚上-1", "text": "可自煮或是外食！"}, {"id": "d4-晚上-2", "text": "想逛超市或其他的當然可以～～"}]}], "food": {"早餐": [{"id": "food-4-早餐-1", "name": "Felix For Goodness"}, {"id": "food-4-早餐-2", "name": "Hill Station Cafe & Restaurant"}, {"id": "food-4-早餐-3", "name": "Christian Jacques Bakery"}, {"id": "food-4-早餐-4", "name": "Blackstar Coffee Roasters - West End"}, {"id": "food-4-早餐-5", "name": "The Twin"}, {"id": "food-4-早餐-6", "name": "Cafe Disco"}, {"id": "food-4-早餐-7", "name": "Good Good West End"}, {"id": "food-4-早餐-8", "name": "Blue Bear Coffeehouse"}, {"id": "food-4-早餐-9", "name": "James & Antler"}, {"id": "food-4-早餐-10", "name": "Piccolo By Him"}, {"id": "food-4-早餐-11", "name": "Andonis Cafe & Bar, Fortitude Valley"}, {"id": "food-4-早餐-12", "name": "Paddington Social"}, {"id": "food-4-早餐-13", "name": "Riser"}], "晚餐": [{"id": "food-4-晚餐-1", "name": "La Lupa"}, {"id": "food-4-晚餐-2", "name": "Burger Time 69"}, {"id": "food-4-晚餐-3", "name": "Hai Hai West End"}, {"id": "food-4-晚餐-4", "name": "Gamdang 감당"}, {"id": "food-4-晚餐-5", "name": "Betty’s Burgers"}, {"id": "food-4-晚餐-6", "name": "Choi Korean Cuisine City"}]}, "notes": ["附近有布里斯本Tiny Door！"]}, {"id": "day-5", "day": "DAY 5", "date": "2026-07-25", "city": "布里斯本", "weatherCity": "Brisbane", "lat": -27.4698, "lon": 153.0251, "slots": [{"time": "早上", "items": []}, {"time": "中午", "items": []}, {"time": "下午", "items": []}, {"time": "晚上", "items": [{"id": "d5-night-cat", "text": "去高高家吃飯摸貓咪🐈‍⬛！！"}]}], "food": {}, "notes": []}, {"id": "day-6", "day": "DAY 6", "date": "2026-07-26", "city": "布里斯本 → 墨爾本", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d6-早上-1", "text": "起飛前2.5小時叫車到機場"}, {"id": "d6-早上-2", "text": "🛩️ 11：55 布里斯本 ➜ 14：20 阿瓦隆"}]}, {"time": "中午", "items": [{"id": "d6-中午-1", "text": "🛩️ 💺"}]}, {"time": "下午", "items": [{"id": "d6-下午-1", "text": "搭 14：50 或 15：50 的Avalon City Express 機場巴士至 Southern Cross Station （車程約70分鐘）"}, {"id": "d6-下午-2", "text": "到Southern Cross Railway Station/Spencer St 搭 48號電車 到 Melbourne Town Hall/Collins St"}, {"id": "d6-下午-3", "text": "下車後步行1分鐘到 City Square/Swanston St 搭 72號電車 到 RMIT University/Swanston St"}, {"id": "d6-下午-4", "text": "步行3分鐘至Airbnb，地址：462 Elizabeth St, Melbourne VIC 3000, Australia"}]}, {"time": "晚上", "items": [{"id": "d6-晚上-1", "text": "到市區逛逛～～～"}, {"id": "d6-晚上-2", "text": "粗晚餐！"}, {"id": "d6-晚上-3", "text": "想逛超市或其他的一定可以！！"}]}], "food": {"甜點": [{"id": "food-6-甜點-1", "name": "Gelato Messina Fitzroy"}, {"id": "food-6-甜點-2", "name": "Bekù Gelato - Carlton"}, {"id": "food-6-甜點-3", "name": "Hareruya Pantry"}, {"id": "food-6-甜點-4", "name": "Gelateria Primavera"}, {"id": "food-6-甜點-5", "name": "Pidapipó CBD"}, {"id": "food-6-甜點-6", "name": "A Little Something Cake (Inside Vapiano Restaurant)"}, {"id": "food-6-甜點-7", "name": "Tori’s"}, {"id": "food-6-甜點-8", "name": "Kudo"}], "晚餐": [{"id": "food-6-晚餐-1", "name": "Guzman y Gomez - 260 Flinders St"}, {"id": "food-6-晚餐-2", "name": "Leonardo's Pizza Palace"}, {"id": "food-6-晚餐-3", "name": "Universal Restaurant"}, {"id": "food-6-晚餐-4", "name": "Khaosan Lane"}, {"id": "food-6-晚餐-5", "name": "BBQ King"}, {"id": "food-6-晚餐-6", "name": "Maccaroni Trattoria Italiana"}, {"id": "food-6-晚餐-7", "name": "＋39 Pizzeria CBD"}, {"id": "food-6-晚餐-8", "name": "Max on Hardware"}, {"id": "food-6-晚餐-9", "name": "Ca De Vin"}, {"id": "food-6-晚餐-10", "name": "Uncle Yoon Korean restaurant"}, {"id": "food-6-晚餐-11", "name": "Stalactites Restaurant"}, {"id": "food-6-晚餐-12", "name": "Mr PHO Hoa Hoi Vang"}, {"id": "food-6-晚餐-13", "name": "Saigon Square"}, {"id": "food-6-晚餐-14", "name": "OMO"}], "住宿附近的超市": [{"id": "food-6-住宿附近的超市-1", "name": "Woolworths Qv"}, {"id": "food-6-住宿附近的超市-2", "name": "Coles Central Melbourne Central"}, {"id": "food-6-住宿附近的超市-3", "name": "Chemist Warehouse Melbourne - William St"}, {"id": "food-6-住宿附近的超市-4", "name": "Chemist Warehouse Elizabeth St Victoria Market"}]}, "notes": ["在日出的時候可以從房間看到熱氣球！！（如果熱氣球有正常飛行", "墨爾本交通可用市區免費電車搭配雙腳及 Uber 即可，免費電車需注意「 FREE TRAM ZONE 」標誌！"]}, {"id": "day-7", "day": "DAY 7", "date": "2026-07-27", "city": "墨爾本", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d7-brunch", "text": "吃早午餐～～"}]}, {"time": "中午", "items": [{"id": "d7-中午-1", "text": "吃飽後到State Library Victoria逛逛"}, {"id": "d7-中午-2", "text": "再到附近的Carlton Gardens、Royal Exhibition Building 晃晃"}]}, {"time": "下午", "items": [{"id": "d7-下午-1", "text": "到 Emporium Melbourne 逛街"}, {"id": "d7-下午-2", "text": "附近的店也都可以逛逛（像是Cotton On Melbourne Central、MECCA Melbourne Central、SEPHORA Melbourne Central、digiDirect Melbourne）"}]}, {"time": "晚上", "items": [{"id": "d7-晚上-1", "text": "晚餐啊姆啊姆"}, {"id": "d7-晚上-2", "text": "想逛超市或其他的逮就補得斯"}]}], "food": {"早餐": [{"id": "food-7-早餐-1", "name": "Publique Bakery"}, {"id": "food-7-早餐-2", "name": "Brick Lane Melbourne"}, {"id": "food-7-早餐-3", "name": "Operator25"}, {"id": "food-7-早餐-4", "name": "Manchester Press"}, {"id": "food-7-早餐-5", "name": "Bloomwood"}, {"id": "food-7-早餐-6", "name": "in.btwn"}, {"id": "food-7-早餐-7", "name": "It's Bagel"}, {"id": "food-7-早餐-8", "name": "Schmucks Bagels（分店：Schmucks Bagels）"}, {"id": "food-7-早餐-9", "name": "Baguette Studios"}, {"id": "food-7-早餐-10", "name": "Higher Ground"}, {"id": "food-7-早餐-11", "name": "Dukes Coffee Roasters"}, {"id": "food-7-早餐-12", "name": "Time after time"}, {"id": "food-7-早餐-13", "name": "Brother Baba Budan"}, {"id": "food-7-早餐-14", "name": "Bakemono Bakers"}, {"id": "food-7-早餐-15", "name": "sunhands"}, {"id": "food-7-早餐-16", "name": "OMO"}, {"id": "food-7-早餐-17", "name": "Patricia Coffee Brewers"}, {"id": "food-7-早餐-18", "name": "Twenty & Six Espresso"}], "甜點": [{"id": "food-7-甜點-1", "name": "Gelato Messina Fitzroy"}, {"id": "food-7-甜點-2", "name": "Bekù Gelato - Carlton"}, {"id": "food-7-甜點-3", "name": "Hareruya Pantry"}, {"id": "food-7-甜點-4", "name": "Gelateria Primavera"}, {"id": "food-7-甜點-5", "name": "Pidapipó CBD"}, {"id": "food-7-甜點-6", "name": "A Little Something Cake (Inside Vapiano Restaurant)"}, {"id": "food-7-甜點-7", "name": "Tori’s"}, {"id": "food-7-甜點-8", "name": "Kudo"}, {"id": "food-7-甜點-9", "name": "THE FLOUR MELBOURNE"}], "晚餐": [{"id": "food-7-晚餐-1", "name": "Guzman y Gomez - 260 Flinders St"}, {"id": "food-7-晚餐-2", "name": "Leonardo's Pizza Palace"}, {"id": "food-7-晚餐-3", "name": "Universal Restaurant"}, {"id": "food-7-晚餐-4", "name": "Khaosan Lane"}, {"id": "food-7-晚餐-5", "name": "BBQ King"}, {"id": "food-7-晚餐-6", "name": "Maccaroni Trattoria Italiana"}, {"id": "food-7-晚餐-7", "name": "＋39 Pizzeria CBD"}, {"id": "food-7-晚餐-8", "name": "Max on Hardware"}, {"id": "food-7-晚餐-9", "name": "Ca De Vin"}, {"id": "food-7-晚餐-10", "name": "Uncle Yoon Korean restaurant"}, {"id": "food-7-晚餐-11", "name": "Stalactites Restaurant"}, {"id": "food-7-晚餐-12", "name": "Mr PHO Hoa Hoi Vang"}, {"id": "food-7-晚餐-13", "name": "Saigon Square"}, {"id": "food-7-晚餐-14", "name": "OMO"}]}, "notes": ["當天可以買一些東西隔天大洋路一日遊吃！"]}, {"id": "day-8", "day": "DAY 8", "date": "2026-07-28", "city": "墨爾本", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d8-早上-1", "text": "07：30前從 Airbnb 離開"}, {"id": "d8-早上-2", "text": "步行10分鐘至集合點270 Queen St, Melbourne VIC 3000澳洲 （表定07：45集合）"}]}, {"time": "中午", "items": [{"id": "d8-中午-1", "text": "大洋路一日遊！（期待）（搓手）"}]}, {"time": "下午", "items": [{"id": "d8-下午-1", "text": "大洋路一日遊！（期待）（搓手）"}]}, {"time": "晚上", "items": [{"id": "d8-晚上-1", "text": "預計 20：00 回到早上的集合點"}, {"id": "d8-晚上-2", "text": "晚餐視情況決定～"}]}], "food": {}, "notes": []}, {"id": "day-9", "day": "DAY 9", "date": "2026-07-29", "city": "墨爾本", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d9-早上-1", "text": "早餐時間！ 逛逛南墨爾本市場（一二四休息，8:00~16:00）"}]}, {"time": "中午", "items": [{"id": "d9-中午-1", "text": "視情況決定要不要去 Royal Botanic Gardens Victoria - Melbourne Gardens 逛逛"}]}, {"time": "下午", "items": [{"id": "d9-下午-1", "text": "可以在 Albert Park Walking Track 或 Point Ormond Lookout 或 st Kilda beach 看日落～～"}, {"id": "d9-下午-2", "text": "19：00 看 St Kilda Penguins 🐧🐧🐧"}]}, {"time": "晚上", "items": [{"id": "d9-晚上-1", "text": "晚餐視情況決定～"}]}], "food": {"早餐": [{"id": "food-8-早餐-1", "name": "Agathé Pâtisserie（南墨爾本市場內）"}, {"id": "food-8-早餐-2", "name": "Publique Bakery"}, {"id": "food-8-早餐-3", "name": "Brick Lane Melbourne"}, {"id": "food-8-早餐-4", "name": "Operator25"}, {"id": "food-8-早餐-5", "name": "Manchester Press"}, {"id": "food-8-早餐-6", "name": "Bloomwood"}, {"id": "food-8-早餐-7", "name": "in.btwn"}, {"id": "food-8-早餐-8", "name": "It's Bagel"}, {"id": "food-8-早餐-9", "name": "Schmucks Bagels（分店：Schmucks Bagels）"}, {"id": "food-8-早餐-10", "name": "Baguette Studios"}, {"id": "food-8-早餐-11", "name": "Higher Ground"}, {"id": "food-8-早餐-12", "name": "Dukes Coffee Roasters"}, {"id": "food-8-早餐-13", "name": "Time after time"}, {"id": "food-8-早餐-14", "name": "Brother Baba Budan"}, {"id": "food-8-早餐-15", "name": "Bakemono Bakers"}, {"id": "food-8-早餐-16", "name": "sunhands"}, {"id": "food-8-早餐-17", "name": "OMO"}, {"id": "food-8-早餐-18", "name": "Patricia Coffee Brewers"}, {"id": "food-8-早餐-19", "name": "Twenty & Six Espresso"}]}, "notes": []}, {"id": "day-10", "day": "DAY 10", "date": "2026-07-30", "city": "墨爾本", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d10-早上-1", "text": "早餐時間！ （可視情況決定要不要去Queen Victoria Market）"}]}, {"time": "中午", "items": [{"id": "d10-中午-1", "text": "去Fitzroy 區逛逛（墨爾本的街區，很多小店！）"}]}, {"time": "下午", "items": [{"id": "d10-下午-1", "text": "Shopping time！！"}]}, {"time": "晚上", "items": [{"id": "d10-晚上-1", "text": "晚餐要粗啥🤤"}]}], "food": {"早餐": [{"id": "food-10-早餐-1", "name": "Mile End Bagels"}, {"id": "food-10-早餐-2", "name": "Hector's Deli"}, {"id": "food-10-早餐-3", "name": "Faraday's Cage"}, {"id": "food-10-早餐-4", "name": "To Be Frank Bakery"}, {"id": "food-10-早餐-5", "name": "Ageyo Coffee"}, {"id": "food-10-早餐-6", "name": "Calle Bakery"}, {"id": "food-10-早餐-7", "name": "Monforte Viennoiserie"}, {"id": "food-10-早餐-8", "name": "Amann Patisserie"}, {"id": "food-10-早餐-9", "name": "2T Cafe"}], "甜點": [{"id": "food-10-甜點-1", "name": "Pinto Tiramisu"}, {"id": "food-10-甜點-2", "name": "Gelato Messina Fitzroy"}, {"id": "food-10-甜點-3", "name": "Lulu & me Cheesecakes"}], "晚餐": [{"id": "food-10-晚餐-1", "name": "Pizza Shop"}, {"id": "food-10-晚餐-2", "name": "Good Times"}]}, "notes": []}, {"id": "day-11", "day": "DAY 11", "date": "2026-07-31", "city": "墨爾本 → 台灣", "weatherCity": "Melbourne", "lat": -37.8136, "lon": 144.9631, "slots": [{"time": "早上", "items": [{"id": "d11-早上-1", "text": "在Southern Cross Station搭 05 : 00 的機場巴士到墨爾本機場T3下車（車程約25～30分鐘），再走到T2"}, {"id": "d11-早上-2", "text": "🛩️ 08 : 00 墨爾本 ➜ 14 : 25 馬尼拉"}]}, {"time": "中午", "items": [{"id": "d11-中午-1", "text": "🛫 💺 🎧 🎞️ 😪 🍴"}]}, {"time": "下午", "items": [{"id": "d11-下午-1", "text": "🛩️ 18：25 馬尼拉 ➜ 20：50 桃園"}]}, {"time": "晚上", "items": [{"id": "d11-晚上-1", "text": "🚄 🛄 🏠 🛁 🛌 💤"}]}], "food": {}, "notes": []}];
+const STORAGE_KEY = "australia-grad-trip-v8";
+
+Vue.createApp({
+  data() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    let days;
+    try { days = saved ? JSON.parse(saved) : structuredClone(ORIGINAL_DAYS); }
+    catch { days = structuredClone(ORIGINAL_DAYS); }
+    return {
+      days,
+      activeDayIndex: 0,
+      weather: { icon:"🌤️", smallIcon:"○", temperature:"--°", detail:"正在讀取當地天氣…" },
+      weatherCache: {},
+      dateButtons: [],
+      modal: { show:false, type:"item", title:"", text:"", slotIndex:0, itemIndex:null, category:null }
+    };
+  },
+  computed: {
+    currentDay() { return this.days[this.activeDayIndex]; },
+    itemCount() { return this.currentDay.slots.reduce((sum,s)=>sum+s.items.length,0); },
+    foodCount() { return Object.values(this.currentDay.food).reduce((sum,a)=>sum+a.length,0); },
+    transportLabel() { return "Translink Journey Planner"; },
+    transportUrl() { return "https://jp.translink.com.au/plan-your-journey/journey-planner"; },
+    allDayMapUrl() {
+      const texts = this.currentDay.slots.flatMap(s=>s.items.map(i=>this.cleanMapQuery(i.text))).filter(Boolean);
+      const query = texts.slice(0,8).join(" → ") || this.currentDay.city;
+      return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(query) + "&travelmode=transit";
+    }
+  },
+  watch: {
+    days: { deep:true, handler(value){ localStorage.setItem(STORAGE_KEY,JSON.stringify(value)); } },
+    activeDayIndex(){ this.fetchWeather(); }
+  },
+  mounted() {
+    const today = new Date();
+    const idx = this.days.findIndex(d => d.date === today.toISOString().slice(0,10));
+    if (idx >= 0) this.activeDayIndex = idx;
+    this.fetchWeather();
+    this.$nextTick(()=>this.centerDate());
+  },
+  methods: {
+    selectDay(index){ this.activeDayIndex=index; this.$nextTick(()=>this.centerDate()); window.scrollTo({top:0,behavior:"smooth"}); },
+    centerDate(){ this.dateButtons[this.activeDayIndex]?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"}); },
+    dayNumber(date){ return String(new Date(date+"T12:00:00").getDate()).padStart(2,"0"); },
+    weekday(date){ return new Intl.DateTimeFormat("zh-TW",{weekday:"short"}).format(new Date(date+"T12:00:00")); },
+    prettyDate(date){ return new Intl.DateTimeFormat("zh-TW",{month:"long",day:"numeric",weekday:"long"}).format(new Date(date+"T12:00:00")); },
+    slotIcon(time){ return ({早上:"☀️",中午:"🥪",下午:"🫧",晚上:"🌙"})[time] || "•"; },
+    foodIcon(category){ return ({早餐:"🥐",午餐:"🥯",甜點:"🍨",晚餐:"🍝","住宿附近的超市":"🛒"})[category] || "🍽️"; },
+    itemIcon(text){
+      const t = text.replace(/\s+/g," ").trim();
+      if (/^[🏠🛌⏰🚽🤳🏻🍳🪥🪞🍽️🚇🎒🧳🛫🛩️💺🎧🎞️😪🍴🚄🛄🛁💤\s]+$/u.test(t)) return "";
+      if (/從機場叫車至飯店寄放行李/i.test(t)) return "🚗";
+      if (/逛超市時間\s+呀呼～～/i.test(t)) return "🥝";
+      if (/轉搭705號公車至Sea World/i.test(t)) return "🚌";
+      if (/^可自煮或是外食！$/i.test(t)) return "🍴";
+      if (/去高高家吃飯摸貓咪/i.test(t)) return "🍖";
+      if (/到市區逛逛～～～/i.test(t)) return "🚶🏻‍♀️‍➡️";
+      if (/^吃早午餐～～$/i.test(t) && /2026-07-27/.test(this.currentDay.date)) return "🍞";
+      if (/步行10分鐘至集合點270 Queen St/i.test(t)) return "🚶🏻‍♀️‍➡️";
+
+      if (/^Story Bridge$/i.test(t)) return "🌉";
+      if (/South Bank Parklands/i.test(t)) return "⛲️";
+      if (/Gelato time/i.test(t)) return "🍦";
+      if (/Highgate Hill Park.*日落/i.test(t)) return "🌄";
+      if (/Surfers Paradise North Station.*Surfers Paradise Sign.*沙灘.*SkyPoint/i.test(t)) return "🏖️";
+      if (/Lone Pine Koala Sanctuary/i.test(t)) return "🐨";
+      if (/昆士蘭大學|去高於接的學校/i.test(t)) return "🏫";
+      if (/起飛前2\.5小時叫車到機場/i.test(t)) return "🚗";
+      if (/Avalon City Express.*Southern Cross Station/i.test(t)) return "🚌";
+      if (/^粗晚餐！$/i.test(t) && /2026-07-26/.test(this.currentDay.date)) return "🥣";
+      if (/State Library Victoria/i.test(t)) return "📚";
+      if (/Carlton Gardens.*Royal Exhibition Building/i.test(t)) return "⛲️";
+      if (/大洋路一日遊！/i.test(t)) return "🛣️";
+      if (/^晚餐啊姆啊姆$/i.test(t)) return "😋";
+      if (/想逛超市或其他的逮就補得斯/i.test(t)) return "😌";
+      if (/Royal Botanic Gardens Victoria/i.test(t)) return "⛲️";
+      if (/Albert Park Walking Track.*Point Ormond Lookout.*st Kilda beach.*日落/i.test(t)) return "🌄";
+      if (/19：00 看 St Kilda Penguins/i.test(t)) return "🐧";
+      if (/^晚餐視情況決定～?$/i.test(t) && /2026-07-28/.test(this.currentDay.date)) return "🥣";
+      if (/^晚餐視情況決定～?$/i.test(t) && /2026-07-29/.test(this.currentDay.date)) return "🤤";
+      if (/2026-07-30/.test(this.currentDay.date) && /晚餐/i.test(t)) return "🍕";
+      if (/Southern Cross Station搭 05 : 00 的機場巴士/i.test(t)) return "🚌";
+      if (/大概日落前1~1\.5小時離開Sea World/i.test(t)) return "🎢";
+      if (/Sea World/i.test(t)) return "🎢";
+      if (/企鵝/i.test(t)) return "🐧";
+      if (/Koala|Lone Pine/i.test(t)) return "🐨";
+      if (/機場|航班|桃園|馬尼拉|阿瓦隆|🛩/i.test(t)) return "✈️";
+      if (/飯店|Airbnb|住宿|🏨/i.test(t)) return "🏨";
+      if (/火車|station|Station|公車|電車|巴士|Central/i.test(t)) return "🚆";
+      if (/早餐|午餐|早午餐|吃|Gelato/i.test(t)) return "🍽️";
+      if (/市場|Mall|逛街|超市|Shopping time/i.test(t)) return "🛍️";
+      if (/日落|沙灘|Park|Gardens|大洋路/i.test(t)) return "🌿";
+      return "📍";
+    },
+    cleanMapQuery(text){
+      return text.replace(/[🏠🛌⏰🚽🤳🏻🍳🪥🪞🍽️🚇🎒🧳🛩️💺🎧🎞️😪🛄🛁💤🚄🐧☆＊]/gu," ")
+        .replace(/地址：/g," ").replace(/\([^)]*\)|（[^）]*）/g," ").replace(/\s+/g," ").trim();
+    },
+    mapUrl(text){
+      return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(this.cleanMapQuery(text) || this.currentDay.city) + "&travelmode=transit";
+    },
+    weatherCode(code){
+      if (code===0) return ["☀️","晴朗"];
+      if ([1,2].includes(code)) return ["🌤️","晴時多雲"];
+      if (code===3) return ["☁️","多雲"];
+      if ([45,48].includes(code)) return ["🌫️","有霧"];
+      if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) return ["🌧️","有雨"];
+      if ([71,73,75,77,85,86].includes(code)) return ["🌨️","有雪"];
+      if ([95,96,99].includes(code)) return ["⛈️","雷雨"];
+      return ["🌤️","天氣"];
+    },
+    async fetchWeather(force=false){
+      const day=this.currentDay;
+      const key=day.weatherCity+"-"+day.date;
+      if (!force && this.weatherCache[key]) { this.weather=this.weatherCache[key]; return; }
+      this.weather={icon:"🌤️",smallIcon:"○",temperature:"--°",detail:"正在讀取 "+day.weatherCity+" 天氣…"};
+      try {
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${day.lat}&longitude=${day.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16`;
+        const r=await fetch(url);
+        if(!r.ok) throw new Error("weather");
+        const data=await r.json();
+        const dateIndex=data.daily.time.indexOf(day.date);
+        let result;
+        if(dateIndex>=0){
+          const [icon,status]=this.weatherCode(data.daily.weather_code[dateIndex]);
+          result={
+            icon, smallIcon:"◌",
+            temperature:`${Math.round(data.daily.temperature_2m_max[dateIndex])}° / ${Math.round(data.daily.temperature_2m_min[dateIndex])}°`,
+            detail:`${status} · 降雨機率 ${data.daily.precipitation_probability_max[dateIndex] ?? "--"}% · ${day.weatherCity} 旅行日預報`
+          };
+        } else {
+          const [icon,status]=this.weatherCode(data.current.weather_code);
+          result={
+            icon, smallIcon:"◌",
+            temperature:`${Math.round(data.current.temperature_2m)}°`,
+            detail:`旅行日期預報尚未開放；目前 ${day.weatherCity} ${status}，風速 ${Math.round(data.current.wind_speed_10m)} km/h`
+          };
+        }
+        this.weatherCache[key]=result; this.weather=result;
+      } catch {
+        this.weather={icon:"🌥️",smallIcon:"!",temperature:"--°",detail:"無法取得天氣；請確認網路連線後再更新。"};
+      }
+    },
+    openAddSlotItem(slotIndex){ this.modal={show:true,type:"item",title:`新增${this.currentDay.slots[slotIndex].time}行程`,text:"",slotIndex,itemIndex:null,category:null}; },
+    openEditSlotItem(slotIndex,itemIndex){
+      this.modal={show:true,type:"item",title:"編輯行程",text:this.currentDay.slots[slotIndex].items[itemIndex].text,slotIndex,itemIndex,category:null};
+    },
+    openAddFood(category){ this.modal={show:true,type:"food",title:`新增${category}`,text:"",slotIndex:null,itemIndex:null,category}; },
+    closeModal(){ this.modal.show=false; },
+    saveModal(){
+      const text=this.modal.text.trim(); if(!text) return;
+      if(this.modal.type==="food"){
+        if(!this.currentDay.food[this.modal.category]) this.currentDay.food[this.modal.category]=[];
+        this.currentDay.food[this.modal.category].push({id:"f-"+Date.now(),name:text});
+      } else if(this.modal.itemIndex===null){
+        this.currentDay.slots[this.modal.slotIndex].items.push({id:"i-"+Date.now(),text});
+      } else {
+        this.currentDay.slots[this.modal.slotIndex].items[this.modal.itemIndex].text=text;
+      }
+      this.closeModal();
+    },
+    deleteSlotItem(slotIndex,itemIndex){ if(confirm("確定刪除這項行程？")) this.currentDay.slots[slotIndex].items.splice(itemIndex,1); },
+    deleteFood(category,index){ if(confirm("確定刪除這個地點？")) this.currentDay.food[category].splice(index,1); },
+    resetData(){
+      if(confirm("要恢復成 Excel 原始資料嗎？你新增或修改的內容會被清除。")){
+        this.days=structuredClone(ORIGINAL_DAYS); localStorage.removeItem(STORAGE_KEY); this.activeDayIndex=0; this.fetchWeather(true);
+      }
+    },
+    openExternal(url){
+      if (!url) return;
+      const win = window.open(url, "_blank", "noopener,noreferrer");
+      if (!win) window.location.href = url;
+    },
+    scrollTop(){ window.scrollTo({top:0,behavior:"smooth"}); }
+  }
+}).mount("#app");
+</script>
+</body>
+</html>
